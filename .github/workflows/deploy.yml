@@ -1,0 +1,56 @@
+name: Deploy to GitHub Pages
+
+on:
+  push:
+    branches: [main]
+
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Generate config.js from secrets
+        run: |
+          cat > JavaScript/config.js << 'EOF'
+          const Config = {
+            emailjs: {
+              publicKey:  "EMAILJS_PUBLIC_KEY_PLACEHOLDER",
+              serviceId:  "EMAILJS_SERVICE_ID_PLACEHOLDER",
+              templateId: "EMAILJS_TEMPLATE_ID_PLACEHOLDER",
+            },
+            particles: {
+              count:   22,
+              minSize: 4,
+              maxSize: 12,
+            },
+            waves: {
+              pathIds: ['hc1', 'hc2', 'hc3', 'hc4', 'hc5'],
+              layers: [
+                { ampMin: 40, ampMax: 100, freqMin: 0.0003, freqMax: 0.0007 },
+                { ampMin: 20, ampMax: 50,  freqMin: 0.0007, freqMax: 0.0013 },
+                { ampMin: 10, ampMax: 25,  freqMin: 0.0015, freqMax: 0.0025 },
+              ],
+            },
+          };
+          EOF
+          sed -i "s/EMAILJS_PUBLIC_KEY_PLACEHOLDER/${{ secrets.EMAILJS_PUBLIC_KEY }}/" JavaScript/config.js
+          sed -i "s/EMAILJS_SERVICE_ID_PLACEHOLDER/${{ secrets.EMAILJS_SERVICE_ID }}/" JavaScript/config.js
+          sed -i "s/EMAILJS_TEMPLATE_ID_PLACEHOLDER/${{ secrets.EMAILJS_TEMPLATE_ID }}/" JavaScript/config.js
+
+      - uses: actions/configure-pages@v5
+
+      - uses: actions/upload-pages-artifact@v3
+        with:
+          path: .
+
+      - uses: actions/deploy-pages@v4
+        id: deployment
